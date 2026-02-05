@@ -11,7 +11,7 @@ import pickle
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from Bio.Seq import Seq
 from tqdm import tqdm
