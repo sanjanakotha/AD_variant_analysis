@@ -6,17 +6,23 @@ coding sequences (CDS). It automatically sorts all inputs and stores
 sorted versions for reuse.
 """
 
-import subprocess
-import os
-import sys
-from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from tqdm import tqdm
 import argparse
+import os
+import subprocess
+import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+from typing import List, Optional
+
+from tqdm import tqdm
 
 
-def check_bedtools():
-    """Check if bedtools is available."""
+def check_bedtools() -> bool:
+    """Check if bedtools is available.
+    
+    Returns:
+        True if bedtools is available, False otherwise
+    """
     try:
         subprocess.run(['bedtools', '--version'], 
                       capture_output=True, check=True)
@@ -46,7 +52,7 @@ def run_bedtools_sort(input_file: Path, output_file: Path) -> bool:
         return False
 
 
-def run_bedtools_intersect(cds_file: Path, variants_file: Path, output_file: Path) -> str:
+def run_bedtools_intersect(cds_file: Path, variants_file: Path, output_file: Path) -> Optional[str]:
     """
     Intersect CDS BED file with variants using bedtools.
     
@@ -86,7 +92,7 @@ def run_bedtools_intersect(cds_file: Path, variants_file: Path, output_file: Pat
         return f"Exception on {cds_file.name}: {e}"
 
 
-def sort_bed_files(bed_files: list, input_dir: Path, sorted_dir: Path, 
+def sort_bed_files(bed_files: List[str], input_dir: Path, sorted_dir: Path, 
                    desc: str = "Sorting", max_workers: int = 8) -> int:
     """
     Sort multiple BED files in parallel.
@@ -130,8 +136,8 @@ def sort_bed_files(bed_files: list, input_dir: Path, sorted_dir: Path,
 
 
 def intersect_variants(cds_sorted_dir: Path, variants_sorted_file: Path, 
-                      output_dir: Path, cds_files: list = None, 
-                      max_workers: int = 8):
+                      output_dir: Path, cds_files: Optional[List[str]] = None, 
+                      max_workers: int = 8) -> None:
     """
     Intersect sorted CDS BED files with sorted variants file.
     
@@ -174,7 +180,7 @@ def intersect_variants(cds_sorted_dir: Path, variants_sorted_file: Path,
                 print(result, file=sys.stderr)
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(
         description="Intersect genomic variants with CDS BED files using bedtools. "

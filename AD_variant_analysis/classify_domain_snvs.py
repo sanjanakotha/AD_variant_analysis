@@ -5,15 +5,15 @@ This script maps protein domain coordinates to genomic coordinates using CDS (co
 information in BED format. It handles both positive and negative strand genes.
 """
 
-import math
-import sys
-import os
+import argparse
 import glob
+import math
+import os
+import sys
 from itertools import groupby
 from operator import itemgetter
 from pathlib import Path
-from typing import List, Tuple, Dict, Optional
-import argparse
+from typing import Dict, List, Optional, Tuple
 
 
 def split_coords(data: List[int], strand: str) -> List[List[int]]:
@@ -222,7 +222,7 @@ def map_domain_to_genomic(domain_coords: List[Tuple[int, int]],
 def process_transcripts(tf_data_file: Path, 
                        cds_directory: Path, 
                        output_directory: Path,
-                       verbose: bool = False):
+                       verbose: bool = False) -> None:
     """
     Process all transcripts and generate domain BED files.
     
@@ -273,7 +273,7 @@ def process_transcripts(tf_data_file: Path,
                     out.write(line + "\n")
 
 
-def main():
+def main() -> None:
     """Main entry point for the script."""
     parser = argparse.ArgumentParser(
         description="Map protein domain coordinates to genomic BED format",
@@ -324,6 +324,12 @@ Example usage:
         sys.exit(1)
     
     # Process transcripts
+    print(f"Processing transcripts...")
+    print(f"  Input file: {args.input}")
+    print(f"  CDS directory: {args.cds_directory}")
+    print(f"  Output directory: {args.output_directory}")
+    print()
+    
     process_transcripts(
         args.input,
         args.cds_directory,
@@ -331,7 +337,30 @@ Example usage:
         args.verbose
     )
     
-    print(f"Processing complete. Output written to {args.output_directory}")
+    # Summary
+    print("\n" + "="*70)
+    print("COMPLETE!")
+    print("="*70)
+    
+    # Count output files
+    output_files = list(args.output_directory.glob('*'))
+    output_files = [f for f in output_files if f.is_file()]
+    non_empty = [f for f in output_files if f.stat().st_size > 0]
+    
+    print(f"\nResults:")
+    print(f"  Total domain files created: {len(output_files)}")
+    print(f"  Files with domains: {len(non_empty)}")
+    print(f"  Files without domains: {len(output_files) - len(non_empty)}")
+    
+    if non_empty:
+        print(f"\nExample domain files:")
+        for f in non_empty[:5]:
+            line_count = sum(1 for _ in open(f))
+            print(f"  {f.name}: {line_count} domain regions")
+        if len(non_empty) > 5:
+            print(f"  ... and {len(non_empty) - 5} more")
+    
+    print(f"\nOutput location: {args.output_directory}")
 
 
 if __name__ == "__main__":

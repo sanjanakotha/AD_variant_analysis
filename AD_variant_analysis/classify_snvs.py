@@ -5,16 +5,16 @@ This script analyzes SNVs in CDS regions and determines their effect on protein
 translation by comparing wild-type and mutant codons.
 """
 
-import os
-import sys
-import pickle
-from pathlib import Path
-from typing import Dict, Tuple, Optional
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from tqdm import tqdm
 import argparse
+import os
+import pickle
+import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+from typing import Dict, Optional, Tuple
 
 from Bio.Seq import Seq
+from tqdm import tqdm
 
 
 # Nucleotide complement mapping for reverse strand
@@ -38,7 +38,7 @@ class SNVClassifier:
         self.dna_transcripts = pickle.load(open(dna_transcripts_file, 'rb'))
         self.sorted_cds_dir = sorted_cds_dir
     
-    def load_cds_coords(self, enst: str, strand: str) -> list:
+    def load_cds_coords(self, enst: str, strand: str) -> List[Tuple[int, int]]:
         """
         Load CDS coordinates from sorted BED file.
         
@@ -68,8 +68,8 @@ class SNVClassifier:
         
         return coords
     
-    def build_genomic_to_cds_mapping(self, coords: list, strand: str, 
-                                     nt_seq: str) -> Tuple[Dict[int, str], Dict[int, list]]:
+    def build_genomic_to_cds_mapping(self, coords: List[Tuple[int, int]], strand: str, 
+                                     nt_seq: str) -> Tuple[Dict[int, str], Dict[int, List[int]]]:
         """
         Build mapping from genomic coordinates to CDS positions and codons.
         
@@ -239,7 +239,7 @@ class SNVClassifier:
             return total, classified, str(e)
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(
         description="Classify SNVs as synonymous, non-synonymous, or nonsense",
