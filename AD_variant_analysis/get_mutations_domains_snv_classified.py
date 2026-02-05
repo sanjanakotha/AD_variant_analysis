@@ -45,7 +45,7 @@ def load_protein_mapping(mapping_file: Path) -> Dict[str, str]:
         # Try reading as CSV first, then TSV
         try:
             df = pd.read_csv(mapping_file)
-        except:
+        except (pd.errors.ParserError, ValueError):
             df = pd.read_csv(mapping_file, sep='\t')
         
         # Validate required columns
@@ -61,7 +61,7 @@ def load_protein_mapping(mapping_file: Path) -> Dict[str, str]:
         
         return mapping
         
-    except Exception as e:
+    except (IOError, ValueError, pd.errors.ParserError) as e:
         print(f"Error loading mapping file: {e}", file=sys.stderr)
         sys.exit(1)
 
@@ -104,7 +104,7 @@ def run_bedtools_intersect(domain_file: Path, classified_snv_file: Path,
         
         return True, None
         
-    except Exception as e:
+    except (subprocess.SubprocessError, IOError) as e:
         return False, str(e)
 
 
@@ -150,7 +150,15 @@ def intersect_domains_with_classified_snvs(
     print(f"Found {len(domain_files)} domain files in {domain_search_dir}")
     
     # Process each domain file
-    def process_domain_file(domain_file: Path):
+    def process_domain_file(domain_file: Path) -> Tuple[Optional[str], int]:
+        """Process a single domain file by intersecting with classified SNVs.
+        
+        Args:
+            domain_file: Path to domain BED file
+            
+        Returns:
+            Tuple of (error message or None, variant count)
+        """
         # Get UniProt ID from filename
         uniprot_id = domain_file.stem  # filename without extension
         
@@ -194,7 +202,7 @@ def intersect_domains_with_classified_snvs(
         futures = [executor.submit(process_domain_file, f) for f in domain_files]
         
         for future in tqdm(as_completed(futures), total=len(futures), 
-                          desc="Classifying domain SNVs"):
+                          desc="Processing domain SNVs"):
             error, variant_count = future.result()
             if error is None:
                 processed += 1

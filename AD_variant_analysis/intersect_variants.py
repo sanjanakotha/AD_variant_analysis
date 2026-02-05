@@ -88,7 +88,7 @@ def run_bedtools_intersect(cds_file: Path, variants_file: Path, output_file: Pat
         
         return None
         
-    except Exception as e:
+    except (subprocess.SubprocessError, IOError) as e:
         return f"Exception on {cds_file.name}: {e}"
 
 
@@ -109,7 +109,15 @@ def sort_bed_files(bed_files: List[str], input_dir: Path, sorted_dir: Path,
     """
     sorted_dir.mkdir(parents=True, exist_ok=True)
     
-    def sort_file(filename):
+    def sort_file(filename: str) -> bool:
+        """Sort a single BED file, skipping if already sorted and up-to-date.
+        
+        Args:
+            filename: Name of the BED file to sort
+            
+        Returns:
+            True if sorting succeeded or file already sorted, False otherwise
+        """
         input_file = input_dir / filename
         # Ensure .bed extension
         if not filename.endswith('.bed'):
@@ -157,7 +165,15 @@ def intersect_variants(cds_sorted_dir: Path, variants_sorted_file: Path,
         # Ensure .bed extension
         cds_files = [f"{f}.bed" if not f.endswith('.bed') else f for f in cds_files]
     
-    def process_file(filename):
+    def process_file(filename: str) -> Optional[str]:
+        """Process a single CDS file by intersecting with variants.
+        
+        Args:
+            filename: Name of the CDS BED file
+            
+        Returns:
+            None if successful, error message if failed
+        """
         cds_file = cds_sorted_dir / filename
         
         # Skip if not a file
@@ -174,7 +190,7 @@ def intersect_variants(cds_sorted_dir: Path, variants_sorted_file: Path,
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [executor.submit(process_file, f) for f in cds_files]
         for future in tqdm(as_completed(futures), total=len(futures), 
-                          desc="Intersecting variants"):
+                          desc="Processing variants"):
             result = future.result()
             if result:
                 print(result, file=sys.stderr)

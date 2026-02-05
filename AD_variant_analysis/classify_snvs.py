@@ -365,7 +365,15 @@ Output format:
     print()
     
     # Process files in parallel
-    def process_file(input_file: Path):
+    def process_file(input_file: Path) -> Tuple[str, int, int, Optional[str]]:
+        """Process a single variant file.
+        
+        Args:
+            input_file: Path to input variant file
+            
+        Returns:
+            Tuple of (filename, total variants, classified variants, error or None)
+        """
         output_file = args.output_dir / input_file.name
         total, classified, error = classifier.process_variant_file(input_file, output_file)
         
@@ -381,7 +389,7 @@ Output format:
         futures = [executor.submit(process_file, f) for f in input_files]
         
         for future in tqdm(as_completed(futures), total=len(futures), 
-                          desc="Classifying SNVs"):
+                          desc="Processing SNVs"):
             filename, total, classified, error = future.result()
             
             total_variants += total

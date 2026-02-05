@@ -58,7 +58,7 @@ def load_protein_mapping(mapping_file: Path) -> Dict[str, str]:
         
         return mapping
         
-    except Exception as e:
+    except (IOError, ValueError, pd.errors.ParserError) as e:
         print(f"Error loading mapping file: {e}", file=sys.stderr)
         sys.exit(1)
 
@@ -101,7 +101,7 @@ def run_bedtools_intersect(domain_file: Path, cds_variants_file: Path,
         
         return True, None
         
-    except Exception as e:
+    except (subprocess.SubprocessError, IOError) as e:
         return False, str(e)
 
 
@@ -147,7 +147,15 @@ def intersect_domains_with_variants(
     print(f"Found {len(domain_files)} domain files in {domain_search_dir}")
     
     # Process each domain file
-    def process_domain_file(domain_file: Path):
+    def process_domain_file(domain_file: Path) -> Optional[str]:
+        """Process a single domain file by intersecting with CDS variants.
+        
+        Args:
+            domain_file: Path to domain BED file
+            
+        Returns:
+            Error message if failed, None if successful
+        """
         # Get UniProt ID from filename
         uniprot_id = domain_file.stem  # filename without extension
         
@@ -182,7 +190,7 @@ def intersect_domains_with_variants(
         futures = [executor.submit(process_domain_file, f) for f in domain_files]
         
         for future in tqdm(as_completed(futures), total=len(futures), 
-                          desc="Intersecting domains"):
+                          desc="Processing domain variants"):
             result = future.result()
             if result is None:
                 processed += 1
