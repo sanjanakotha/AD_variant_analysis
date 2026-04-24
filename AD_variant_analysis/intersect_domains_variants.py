@@ -6,18 +6,24 @@ intersects them with variant files to identify variants within specific
 protein domains (DBD, AD, RD, Bif, IDR).
 """
 
-import subprocess
-import os
-import sys
-from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from tqdm import tqdm
 import argparse
+import os
+import subprocess
+import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+from typing import Dict, Optional, Tuple
+
 import pandas as pd
+from tqdm import tqdm
 
 
-def check_bedtools():
-    """Check if bedtools is available."""
+def check_bedtools() -> bool:
+    """Check if bedtools is available.
+    
+    Returns:
+        True if bedtools is available, False otherwise
+    """
     try:
         subprocess.run(['bedtools', '--version'], 
                       capture_output=True, check=True)
@@ -26,7 +32,7 @@ def check_bedtools():
         return False
 
 
-def load_protein_mapping(mapping_file: Path) -> dict:
+def load_protein_mapping(mapping_file: Path) -> Dict[str, str]:
     """
     Load UniProt ID to ENST mapping.
     
@@ -52,13 +58,13 @@ def load_protein_mapping(mapping_file: Path) -> dict:
         
         return mapping
         
-    except Exception as e:
+    except (IOError, ValueError, pd.errors.ParserError) as e:
         print(f"Error loading mapping file: {e}", file=sys.stderr)
         sys.exit(1)
 
 
 def run_bedtools_intersect(domain_file: Path, cds_variants_file: Path, 
-                          output_file: Path) -> tuple:
+                          output_file: Path) -> Tuple[bool, Optional[str]]:
     """
     Intersect domain BED file with variants using bedtools.
     
@@ -95,7 +101,7 @@ def run_bedtools_intersect(domain_file: Path, cds_variants_file: Path,
         
         return True, None
         
-    except Exception as e:
+    except (subprocess.SubprocessError, IOError) as e:
         return False, str(e)
 
 
@@ -103,10 +109,10 @@ def intersect_domains_with_variants(
     domain_dir: Path,
     cds_variants_dir: Path,
     output_dir: Path,
-    mapping: dict,
-    domain_type: str = None,
+    mapping: Dict[str, str],
+    domain_type: Optional[str] = None,
     max_workers: int = 8
-):
+) -> Tuple[int, list]:
     """
     Intersect all domain files with their corresponding CDS variant files.
     
@@ -117,6 +123,9 @@ def intersect_domains_with_variants(
         mapping: Dictionary mapping UniProt IDs to ENST IDs
         domain_type: Specific domain subdirectory (e.g., 'DBD', 'AD') or None for all
         max_workers: Number of parallel workers
+        
+    Returns:
+        Tuple of (processed count, errors list)
     """
     # Determine domain directory
     if domain_type and domain_type.lower() != 'none':
@@ -138,7 +147,15 @@ def intersect_domains_with_variants(
     print(f"Found {len(domain_files)} domain files in {domain_search_dir}")
     
     # Process each domain file
-    def process_domain_file(domain_file: Path):
+    def process_domain_file(domain_file: Path) -> Optional[str]:
+        """Process a single domain file by intersecting with CDS variants.
+        
+        Args:
+            domain_file: Path to domain BED file
+            
+        Returns:
+            Error message if failed, None if successful
+        """
         # Get UniProt ID from filename
         uniprot_id = domain_file.stem  # filename without extension
         
@@ -173,7 +190,7 @@ def intersect_domains_with_variants(
         futures = [executor.submit(process_domain_file, f) for f in domain_files]
         
         for future in tqdm(as_completed(futures), total=len(futures), 
-                          desc="Intersecting domains"):
+                          desc="Processing domain variants"):
             result = future.result()
             if result is None:
                 processed += 1
@@ -183,7 +200,7 @@ def intersect_domains_with_variants(
     return processed, errors
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(
         description="Intersect protein domain regions with genomic variants",

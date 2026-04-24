@@ -5,18 +5,24 @@ This script intersects classified SNVs in CDS regions with protein domain
 regions to identify which SNVs fall within specific domains (DBD, AD, RD, etc.).
 """
 
-import subprocess
-import os
-import sys
-from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from tqdm import tqdm
 import argparse
+import os
+import subprocess
+import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+from typing import Dict, Optional, Tuple
+
 import pandas as pd
+from tqdm import tqdm
 
 
-def check_bedtools():
-    """Check if bedtools is available."""
+def check_bedtools() -> bool:
+    """Check if bedtools is available.
+    
+    Returns:
+        True if bedtools is available, False otherwise
+    """
     try:
         subprocess.run(['bedtools', '--version'], 
                       capture_output=True, check=True)
@@ -25,7 +31,7 @@ def check_bedtools():
         return False
 
 
-def load_protein_mapping(mapping_file: Path) -> dict:
+def load_protein_mapping(mapping_file: Path) -> Dict[str, str]:
     """
     Load UniProt ID to ENST mapping.
     
@@ -39,7 +45,7 @@ def load_protein_mapping(mapping_file: Path) -> dict:
         # Try reading as CSV first, then TSV
         try:
             df = pd.read_csv(mapping_file)
-        except:
+        except (pd.errors.ParserError, ValueError):
             df = pd.read_csv(mapping_file, sep='\t')
         
         # Validate required columns
@@ -55,13 +61,13 @@ def load_protein_mapping(mapping_file: Path) -> dict:
         
         return mapping
         
-    except Exception as e:
+    except (IOError, ValueError, pd.errors.ParserError) as e:
         print(f"Error loading mapping file: {e}", file=sys.stderr)
         sys.exit(1)
 
 
 def run_bedtools_intersect(domain_file: Path, classified_snv_file: Path, 
-                          output_file: Path) -> tuple:
+                          output_file: Path) -> Tuple[bool, Optional[str]]:
     """
     Intersect domain BED file with classified SNVs using bedtools.
     
@@ -98,7 +104,7 @@ def run_bedtools_intersect(domain_file: Path, classified_snv_file: Path,
         
         return True, None
         
-    except Exception as e:
+    except (subprocess.SubprocessError, IOError) as e:
         return False, str(e)
 
 
@@ -106,10 +112,10 @@ def intersect_domains_with_classified_snvs(
     domain_dir: Path,
     classified_snv_dir: Path,
     output_dir: Path,
-    mapping: dict,
-    domain_type: str = None,
+    mapping: Dict[str, str],
+    domain_type: Optional[str] = None,
     max_workers: int = 8
-):
+) -> Tuple[int, int, list]:
     """
     Intersect all domain files with their corresponding classified SNV files.
     
@@ -120,6 +126,9 @@ def intersect_domains_with_classified_snvs(
         mapping: Dictionary mapping UniProt IDs to ENST IDs
         domain_type: Specific domain subdirectory (e.g., 'DBD', 'AD') or None for all
         max_workers: Number of parallel workers
+        
+    Returns:
+        Tuple of (processed count, total variants, errors list)
     """
     # Determine domain directory
     if domain_type and domain_type.lower() != 'none':
@@ -141,7 +150,15 @@ def intersect_domains_with_classified_snvs(
     print(f"Found {len(domain_files)} domain files in {domain_search_dir}")
     
     # Process each domain file
-    def process_domain_file(domain_file: Path):
+    def process_domain_file(domain_file: Path) -> Tuple[Optional[str], int]:
+        """Process a single domain file by intersecting with classified SNVs.
+        
+        Args:
+            domain_file: Path to domain BED file
+            
+        Returns:
+            Tuple of (error message or None, variant count)
+        """
         # Get UniProt ID from filename
         uniprot_id = domain_file.stem  # filename without extension
         
@@ -185,7 +202,7 @@ def intersect_domains_with_classified_snvs(
         futures = [executor.submit(process_domain_file, f) for f in domain_files]
         
         for future in tqdm(as_completed(futures), total=len(futures), 
-                          desc="Classifying domain SNVs"):
+                          desc="Processing domain SNVs"):
             error, variant_count = future.result()
             if error is None:
                 processed += 1
@@ -196,7 +213,7 @@ def intersect_domains_with_classified_snvs(
     return processed, total_variants, errors
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(
         description="Classify SNVs within protein domains",
