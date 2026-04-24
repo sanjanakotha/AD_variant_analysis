@@ -18,13 +18,25 @@ A Python toolkit for analyzing single nucleotide variants (SNVs) in **human** tr
 
 ## Installation
 
+Install directly from GitHub:
+
 ```bash
+pip install git+https://github.com/sanjanakotha/AD_variant_analysis.git
+```
+
+Or clone the repository and install locally:
+
+```bash
+git clone https://github.com/sanjanakotha/AD_variant_analysis.git
+cd AD_variant_analysis
 pip install .
 ```
 
 Or in editable mode for development:
 
 ```bash
+git clone https://github.com/sanjanakotha/AD_variant_analysis.git
+cd AD_variant_analysis
 pip install -e .
 ```
 
