@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ad-variant-analysis"
+version = "0.1.0"
+description = "Toolkit for analyzing SNVs in transcription factor protein domains"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+keywords = ["bioinformatics", "genomics", "variants", "SNV", "transcription factors", "protein domains"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Intended Audience :: Science/Research",
+]
+dependencies = [
+    "biopython>=1.79",
+    "tqdm>=4.60",
+    "pandas>=1.3",
+]
+
+[project.scripts]
+intersect-variants            = "AD_variant_analysis.intersect_variants:main"
+classify-snvs                 = "AD_variant_analysis.classify_snvs:main"
+intersect-domain-variants     = "AD_variant_analysis.intersect_domains_variants:main"
+map-domains                   = "AD_variant_analysis.classify_domain_snvs:main"
+classify-domain-snvs          = "AD_variant_analysis.get_mutations_domains_snv_classified:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["AD_variant_analysis*"]
