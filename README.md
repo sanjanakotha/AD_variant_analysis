@@ -1,6 +1,8 @@
 # AD Variant Analysis
 
-A Python toolkit for analyzing single nucleotide variants (SNVs) in transcription factor (TF) protein domains, including activation domains (ADs), DNA-binding domains (DBDs), repression domains (RDs), bifunctional domains (Bif), and intrinsically disordered regions (IDRs).
+A Python toolkit for analyzing single nucleotide variants (SNVs) in **human** transcription factor (TF) protein domains, including activation domains (ADs), DNA-binding domains (DBDs), repression domains (RDs), bifunctional domains (Bif), and intrinsically disordered regions (IDRs).
+
+> **Note:** The CDS BED files (`cds_beds/`), protein sequences (`raw_files/proteins.dat`), and DNA transcript sequences (`raw_files/dna_transcripts.dat`) provided in this repository are specific to **human TFs**.
 
 ## Features
 
@@ -60,6 +62,17 @@ An example file (`SFARI_TF_de_novo_variants_gpf.bed`) with 117 de novo variants 
 ### CDS BED files
 
 One BED file per transcript (named `<ENST_ID>`), listing the CDS exon intervals with strand information in column 5. These are available from Ensembl BioMart or can be generated with tools such as `gffread`.
+
+Human TF CDS BED files are provided in the `cds_beds/` directory (one file per ENST ID, covering 1,559 human TF transcripts).
+
+### Reference sequence files (human TFs)
+
+Two Python pickle files (`.dat`) containing reference sequences for human TFs are provided in `raw_files/`:
+
+| File | Description |
+|---|---|
+| `raw_files/proteins.dat` | Protein (amino acid) sequences keyed by ENST ID |
+| `raw_files/dna_transcripts.dat` | CDS nucleotide sequences keyed by ENST ID |
 
 ## Pipeline overview
 
@@ -124,8 +137,8 @@ Classify CDS variants as synonymous, non-synonymous, or nonsense using protein a
 classify-snvs \
   --input-dir      output/intersections/ \
   --output-dir     output/classified/ \
-  --proteins       proteins.pkl \
-  --dna-transcripts dna_transcripts.pkl \
+  --proteins       raw_files/proteins.dat \
+  --dna-transcripts raw_files/dna_transcripts.dat \
   --sorted-cds-dir  output/sorted/cds/
 ```
 

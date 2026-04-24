@@ -200,11 +200,12 @@ def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(
         description="Intersect genomic variants with CDS BED files using bedtools. "
-                    "Automatically sorts all inputs and stores sorted files.",
+                    "Automatically sorts all inputs and stores sorted files. "
+                    "Human TF CDS BED files are provided in cds_beds/.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Basic usage - sorts everything automatically
+  # Basic usage with provided human TF CDS beds
   intersect-variants -c cds_beds/ -v variants.bed -o output/
 
   # Process specific CDS files only
@@ -235,7 +236,8 @@ Requirements:
         '-c', '--cds-dir',
         type=Path,
         required=True,
-        help='Directory containing CDS BED files'
+        help='Directory containing CDS BED files. Human TF CDS BED files are '
+             'provided in cds_beds/.'
     )
     
     parser.add_argument(

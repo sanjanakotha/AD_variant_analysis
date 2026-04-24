@@ -242,11 +242,17 @@ class SNVClassifier:
 def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description="Classify SNVs as synonymous, non-synonymous, or nonsense",
+        description="Classify SNVs as synonymous, non-synonymous, or nonsense. "
+                    "The provided reference files (raw_files/proteins.dat and "
+                    "raw_files/dna_transcripts.dat) cover human TFs only.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 This tool analyzes single nucleotide variants (SNVs) in CDS regions and 
 classifies them based on their effect on protein translation.
+
+NOTE: The reference sequence files supplied with this repository
+(raw_files/proteins.dat and raw_files/dna_transcripts.dat) are specific to
+human transcription factors (TFs).
 
 Classifications:
   - Syn: Synonymous (no amino acid change)
@@ -256,20 +262,20 @@ Classifications:
 Input files are typically from intersect-variants output.
 
 Examples:
-  # Basic usage
+  # Basic usage with provided human TF reference files
   classify-snvs \\
     -i cds_variants/intersections/ \\
     -o classified_variants/ \\
-    -p proteins.dat \\
-    -d dna_transcripts.dat \\
+    -p raw_files/proteins.dat \\
+    -d raw_files/dna_transcripts.dat \\
     -c cds_beds/sorted/
 
   # Use more workers
   classify-snvs \\
     -i cds_variants/intersections/ \\
     -o classified_variants/ \\
-    -p proteins.dat \\
-    -d dna_transcripts.dat \\
+    -p raw_files/proteins.dat \\
+    -d raw_files/dna_transcripts.dat \\
     -c cds_beds/sorted/ \\
     -w 16
 
@@ -299,14 +305,16 @@ Output format:
         '-p', '--proteins',
         type=Path,
         required=True,
-        help='Pickle file with protein sequences (ENST -> amino acid sequence)'
+        help='Pickle file with protein sequences (ENST -> amino acid sequence). '
+             'Provided for human TFs at raw_files/proteins.dat.'
     )
     
     parser.add_argument(
         '-d', '--dna-transcripts',
         type=Path,
         required=True,
-        help='Pickle file with DNA transcripts (ENST -> nucleotide sequence)'
+        help='Pickle file with DNA transcripts (ENST -> nucleotide sequence). '
+             'Provided for human TFs at raw_files/dna_transcripts.dat.'
     )
     
     parser.add_argument(
